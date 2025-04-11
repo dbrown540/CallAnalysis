@@ -27,7 +27,114 @@
             margin: 0 auto;
         }
         
-        /* Calendar styles will be added by the script */
+        .calendar-container {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .calendar-nav button {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .calendar-nav button:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .calendar-table th, .calendar-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .calendar-table th {
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+        
+        .calendar-day {
+            min-height: 80px;
+            position: relative;
+        }
+        
+        /* Highlight days with no contact */
+        .no-contact {
+            background-color: #ffdddd;
+        }
+        
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .holiday {
+            color: #e91e63;
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 3px;
+            background-color: #ffebee;
+            padding: 2px 4px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        
+        .call-summary {
+            font-size: 12px;
+        }
+        
+        .canceled {
+            color: #ff0000;
+        }
+        
+        .incoming {
+            color: #008800;
+        }
+        
+        .outgoing {
+            color: #0000cc;
+        }
+        
+        .missed-incoming {
+            color: #9933cc;
+        }
+        
+        .missed-outgoing {
+            color: #cc6600;
+        }
+        
+        .calendar-legend {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .legend-no-contact {
+            background-color: #ffdddd;
+            padding: 2px 5px;
+            margin-top: 5px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -35,7 +142,29 @@
     <div id="calendar-container"></div>
     
     <script>
-        // Call Calendar Formatter Script
+        // Define the boundary dates for highlighting
+        const startHighlightDate = new Date("December 25, 2023");
+        const endHighlightDate = new Date("February 1, 2025");
+        
+        // Function to check if a date is within the highlighting range
+        function isInHighlightRange(year, month, day) {
+            const date = new Date(year, month, day);
+            return date >= startHighlightDate && date < endHighlightDate;
+        }
+        
+        // Function to determine if a day had any contact
+        function hadContact(dayData) {
+            if (!dayData || dayData.length === 0) {
+                return false;
+            }
+            
+            // Check if there's any call that's not just "Canceled"
+            return dayData.some(call => 
+                call[0] === "incoming" || 
+                call[0] === "outgoing" || 
+                call[0] === "missed_by"
+            );
+        }
         
         // Utility function to format duration in minutes to mm:ss format
         function formatDuration(minutes) {
@@ -91,7 +220,7 @@
         
         // Call data
         const call_data = {
-"December 25, 2023": [["status", "Canceled"], ["missed_by", "incoming"], ["status", "Canceled"], ["status", "Canceled"], ["incoming", 5]],
+            "December 25, 2023": [["status", "Canceled"], ["missed_by", "incoming"], ["status", "Canceled"], ["status", "Canceled"], ["incoming", 5]],
     "December 26, 2023": [["status", "Canceled"], ["status", "Canceled"], ["status", "Canceled"], ["incoming", 15/60], ["incoming", 5], ["incoming", 15]],
     "December 27, 2023": [["status", "Canceled"], ["status", "Canceled"]],
     "December 28, 2023": [["status", "Canceled"], ["outgoing", 32], ["incoming", 2]],
@@ -459,10 +588,10 @@
     "December 29, 2024": [["outgoing", 8]],
     "December 30, 2024": [["status", "Canceled"]],
     "December 31, 2024": [["status", "Canceled"]],
-    "January 1, 2025": [["status", "Canceled"]],
-    "January 3, 2025": [["outgoing", 45]],
-    "January 4, 2025": [["status", "Canceled"]],
-    "January 5, 2025": [["missed_by", "incoming"]],
+    "January 1, 2024": [["status", "Canceled"]],
+    "January 3, 2024": [["outgoing", 45]],
+    "January 4, 2024": [["status", "Canceled"]],
+    "January 5, 2024": [["missed_by", "incoming"]],
         };
         
         // Process the call data into a structured format for calendar rendering
@@ -559,6 +688,17 @@
                     .filter(call => call[0] === "outgoing")
                     .reduce((sum, call) => sum + call[1], 0);
                 
+                // Determine if day had contact
+                const hasContact = hadContact(dayData);
+                
+                // Set cell classes based on contact and date range
+                let cellClass = 'calendar-day';
+                
+                // Only highlight days with no contact that are within our date range
+                if (isInHighlightRange(year, month, day) && !hasContact) {
+                    cellClass += ' no-contact';
+                }
+                
                 // Create the day cell content
                 let cellContent = `<div class="day-number">${day}</div>`;
                 
@@ -600,7 +740,7 @@
                 }
                 
                 // Add the day cell to the calendar
-                calendarHTML += `<td class="calendar-day">${cellContent}</td>`;
+                calendarHTML += `<td class="${cellClass}">${cellContent}</td>`;
                 dayCount++;
             }
             
@@ -622,6 +762,7 @@
                         <div>O: Outgoing calls (with duration)</div>
                         <div>MI: Missed incoming calls (you missed their call)</div>
                         <div>MO: Missed outgoing calls (they missed your call)</div>
+                        <div class="legend-no-contact">Red background: Days with no contact (Dec 25, 2023 - Feb 1, 2025 only)</div>
                     </div>
                 </div>
             `;
@@ -688,113 +829,8 @@
                 renderCurrentMonth();
             }
             
-            // Apply CSS styles for the calendar
-            function applyStyles() {
-                const style = document.createElement('style');
-                style.textContent = `
-                    .calendar-container {
-                        font-family: Arial, sans-serif;
-                        max-width: 1000px;
-                        margin: 0 auto;
-                    }
-                    
-                    .calendar-header {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        margin-bottom: 20px;
-                    }
-                    
-                    .calendar-nav {
-                        display: flex;
-                        gap: 10px;
-                    }
-                    
-                    .calendar-nav button {
-                        padding: 8px 16px;
-                        background-color: #f0f0f0;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    }
-                    
-                    .calendar-nav button:hover {
-                        background-color: #e0e0e0;
-                    }
-                    
-                    .calendar-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                    }
-                    
-                    .calendar-table th, .calendar-table td {
-                        border: 1px solid #ddd;
-                        padding: 8px;
-                        text-align: left;
-                        vertical-align: top;
-                    }
-                    
-                    .calendar-table th {
-                        background-color: #f5f5f5;
-                        text-align: center;
-                    }
-                    
-                    .calendar-day {
-                        min-height: 80px;
-                        position: relative;
-                    }
-                    
-                    .day-number {
-                        font-weight: bold;
-                        margin-bottom: 5px;
-                    }
-                    
-                    .holiday {
-                        color: #e91e63;
-                        font-weight: bold;
-                        font-size: 11px;
-                        margin-bottom: 3px;
-                        background-color: #ffebee;
-                        padding: 2px 4px;
-                        border-radius: 3px;
-                        display: inline-block;
-                    }
-                    
-                    .call-summary {
-                        font-size: 12px;
-                    }
-                    
-                    .canceled {
-                        color: #ff0000;
-                    }
-                    
-                    .incoming {
-                        color: #008800;
-                    }
-                    
-                    .outgoing {
-                        color: #0000cc;
-                    }
-                    
-                    .missed-incoming {
-                        color: #9933cc;
-                    }
-                    
-                    .missed-outgoing {
-                        color: #cc6600;
-                    }
-                    
-                    .calendar-legend {
-                        margin-top: 20px;
-                        font-size: 14px;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
             // Initialize the calendar
             function init() {
-                applyStyles();
                 renderCurrentMonth();
             }
             
