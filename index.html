@@ -691,11 +691,17 @@
                 // Determine if day had contact
                 const hasContact = hadContact(dayData);
                 
+                // Function to check if this is one of the specific January 2025 dates we want to keep white
+                function isJanuary2025Exception(year, month, day) {
+                    return year === 2025 && month === 0 && (day === 3 || day === 25 || day === 30);
+                }
+                
                 // Set cell classes based on contact and date range
                 let cellClass = 'calendar-day';
                 
                 // Only highlight days with no contact that are within our date range
-                if (isInHighlightRange(year, month, day) && !hasContact) {
+                // and are not one of our specific January 2025 exceptions
+                if (isInHighlightRange(year, month, day) && !hasContact && !isJanuary2025Exception(year, month, day)) {
                     cellClass += ' no-contact';
                 }
                 
